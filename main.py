@@ -1,55 +1,81 @@
 #!/root/meteoselti/venv/bin/python3
 
+from WS_UMB.WS_UMB import UMBError
 from WS_UMB.WS_UMB import WS_UMB
 from dotenv import load_dotenv
-from measure import Measure
 from time import time
 import requests
 import json
 import cv2
 import os
 
-class Main:
-    def __init__(self, base_url, measure):
-        self.base_url = base_url
-        self.measure = measure
+def main(base_url, umb, name):
+    load_dotenv()
 
-        load_dotenv()
+    headers = { "Authorization": os.getenv("BEARER_TOKEN") }
 
-    def url(self, path):
-        if path.startswith("/"):
-            return self.base_url + path
-        return self.base_url + "/" + path
+    channels = {
+        "air_temperature": 100,                     # float
+        "dewpoint_temperature": 105,                # float
+        "wet_bulb_temperature": 114,                # float
+        "wind_chill_temperature": 111,              # float
+        "relative_humidity": 200,                   # float
+        "absolute_humidity": 205,                   # float
+        "humidity_mixing_ratio": 210,               # float
+        "relative_air_pressure": 305,               # float
+        "absolute_air_pressure": 300,               # float
+        "air_density": 310,                         # float
+        "specific_enthalpy": 215,                   # float
+        "wind_speed": 401,                          # float
+        "wind_direction": 501,                      # float
+        "wind_direction_corrected": 502,            # float
+        "wind_direction_standard_deviation": 503,   # float
+        "wind_value_quality": 806,                  # float
+        "compass_heading": 510,                     # float
+        "precipitation": 625,                       # float
+        "precipitation_intensity": 820,             # float
+        "precipitation_type": 700,                  # int
+        "rain_drop_volume": 11000,                  # float
+        "wind_sensor_heating": 112,                 # float
+        "precipitation_sensor_heating": 113,        # float
+        "supply_voltage": 10000                     # float
+    }
+
+    values = {}
+
+    for _, (identifier, channel) in enumerate(channels.items()):
+        try:
+            value, status = umb.onlineDataQuery(channel)
+        except UMBError:
+            print(f"Error reading value form channel {channel}: {identifier}")
+            continue
+
+        if status != 0:
+            print(f"Status is not 0 on channel {channel}: {identifier} {umb.checkStatus(status)}")
+            continue
+
+        values[f"{name}[{identifier}]"] = value
+
+    values[f"{name}[measured_at]"] = time()
     
-    def get_image(self):
-        cap = cv2.VideoCapture(os.getenv("RTSP_URL"), cv2.CAP_FFMPEG)
-        return cap.read()
+    response = requests.put(f"{base_url}/api/create", headers=headers, data=values)
+    id = json.loads(response.text)["id"]
     
-    def start(self):
-        self.main()
+    cap = cv2.VideoCapture(os.getenv("RTSP_URL"), cv2.CAP_FFMPEG)
+    success, image = cap.read()
+    if not success:
+        return
+    
+    temp_file = f"{int(time())}.jpg"
 
-    def main(self):
-        headers = { "Authorization": os.getenv("BEARER_TOKEN") }
+    cv2.imwrite(temp_file, image)
 
-        values = self.measure.get()
-        response = requests.put(self.url("api/create"), headers=headers, data=values)
-        id = json.loads(response.text)["id"]
+    with open(temp_file, "rb") as image:
+        files = {"sky_capture": image}
+        requests.post(f"{base_url}/api/{id}/attach_image", headers=headers, files=files)
         
-        success, image = self.get_image()
-        if not success:
-            return
-        
-        temp_file = f"{int(time())}.jpg"
-
-        cv2.imwrite(temp_file, image)
-
-        with open(temp_file, "rb") as image:
-            files = {"sky_capture": image}
-            requests.post(self.url(f"api/{id}/attach_image"), headers=headers, files=files)
-            
-        os.remove(temp_file)
-
+    os.remove(temp_file)
 
 if __name__ == "__main__":
     with WS_UMB() as umb:
-        Main("http://192.168.1.100:3000", Measure(umb, "measurement")).start()
+        main("http://192.168.1.100:3000", umb, "measurement")

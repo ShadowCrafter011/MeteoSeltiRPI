@@ -1,5 +1,4 @@
 .env
-__pycache__/
 WS_UMB/__pycache__/
 venv/
 archive/
