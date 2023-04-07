@@ -110,4 +110,4 @@ def main(base_url, umb, name):
 
 if __name__ == "__main__":
     with WS_UMB() as umb:
-        main("http://192.168.1.100:3000", umb, "measurement")
+        main("https://api.meteoselti.ch", umb, "measurement")
