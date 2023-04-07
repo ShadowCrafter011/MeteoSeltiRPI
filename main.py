@@ -1,5 +1,6 @@
 #!/root/meteoselti/venv/bin/python3
 
+from data_manager import DataManager
 from WS_UMB.WS_UMB import UMBError
 from WS_UMB.WS_UMB import WS_UMB
 from dotenv import load_dotenv
@@ -12,7 +13,15 @@ import os
 def main(base_url, umb, name):
     load_dotenv()
 
-    headers = { "Authorization": os.getenv("BEARER_TOKEN") }
+    # Instantiate the data manager to start uploading missing data
+    data_manager = DataManager(name, base_url)
+
+    headers = {
+        "Authorization": os.getenv("BEARER_TOKEN")
+    }
+
+    json_headers = headers.copy()
+    json_headers["Content-Type"] = "application/json"
 
     channels = {
         "air_temperature": 100,                     # float
@@ -41,7 +50,7 @@ def main(base_url, umb, name):
         "supply_voltage": 10000                     # float
     }
 
-    values = {}
+    values = { name: {} }
 
     for _, (identifier, channel) in enumerate(channels.items()):
         try:
@@ -54,27 +63,50 @@ def main(base_url, umb, name):
             print(f"Status is not 0 on channel {channel}: {identifier} {umb.checkStatus(status)}")
             continue
 
-        values[f"{name}[{identifier}]"] = value
+        values[name][identifier] = value
 
-    values[f"{name}[measured_at]"] = time()
-    
-    response = requests.put(f"{base_url}/api/create", headers=headers, data=values)
-    id = json.loads(response.text)["id"]
-    
+    values[name]["measured_at"] = time()
+    payload = json.dumps(values)
+
+    uploaded = False
+    try:
+        response = requests.put(f"{base_url}/api/upload/measurement", headers=json_headers, data=payload)
+        uploaded = True
+    except requests.exceptions.ConnectionError:
+        pass
+
+    # Save data to disk if it could not be uploaded
+    if uploaded and response.status_code != 201:
+        print(f"Server responded with {response.status_code}")
+        print(response.text)
+        data_id = data_manager.save_snapshot(values)
+        uploaded = False
+    elif not uploaded:
+        print("Server could not be reached")
+        data_id = data_manager.save_snapshot(values)
+
+    # Take picture with the webcam
     cap = cv2.VideoCapture(os.getenv("RTSP_URL"), cv2.CAP_FFMPEG)
     success, image = cap.read()
     if not success:
+        print("Picture could not be taken")
         return
-    
-    temp_file = f"{int(time())}.jpg"
 
-    cv2.imwrite(temp_file, image)
+    if uploaded:
+        id = json.loads(response.text)["id"]
+        temp_file = f"{int(time())}.jpg"
+        cv2.imwrite(temp_file, image)
 
-    with open(temp_file, "rb") as image:
-        files = {"sky_capture": image}
-        requests.post(f"{base_url}/api/{id}/attach_image", headers=headers, files=files)
-        
-    os.remove(temp_file)
+        with open(temp_file, "rb") as image:
+            files = {"sky_capture": image}
+            requests.post(f"{base_url}/api/upload/image", headers=headers, data={"id": id}, files=files)
+
+        os.remove(temp_file)
+    else:
+        data_manager.attach_image(data_id, image)
+
+    # Join the upload process
+    data_manager.upload_process.join()
 
 if __name__ == "__main__":
     with WS_UMB() as umb:
