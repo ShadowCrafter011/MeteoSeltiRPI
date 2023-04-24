@@ -4,13 +4,28 @@ from data_manager import DataManager
 from WS_UMB.WS_UMB import UMBError
 from WS_UMB.WS_UMB import WS_UMB
 from dotenv import load_dotenv
+from alert import alert
 from time import time
 import requests
+import signal
 import json
 import cv2
 import os
 
 def main(base_url, umb, name):
+    signal.signal(signal.SIGALRM, sigalrm_handler)
+    signal.alarm(295) # Terminate if script takes longer than 4 minutes and 55 seconds to complete
+
+    # Check if process is still running, if not write the pid to process.pid
+    pid_path = "/root/meteoselti/process.pid"
+
+    if os.path.exists(pid_path):
+        print("Process still running")
+        exit()
+
+    with open(pid_path, "w") as pid:
+        pid.write(os.getpid())
+
     load_dotenv()
 
     # Instantiate the data manager to start uploading missing data
@@ -107,6 +122,13 @@ def main(base_url, umb, name):
 
     # Join the upload process
     data_manager.upload_process.join()
+
+    # Remove the process.pid file to indicate the process is done
+    os.remove(pid_path)
+
+def sigalrm_handler(*_):
+    alert("MeteoSelti script terminated", "The MeteoSelti script was terminated after execution too more than 295 seconds")
+    raise Exception("Script took too long")
 
 if __name__ == "__main__":
     with WS_UMB() as umb:
