@@ -29,10 +29,10 @@ class DataManager:
         if not self.ping():
             return
 
-        json_files = list(filter(lambda f: f.endswith(".json"), os.listdir(self.path("to_upload"))))
+        json_files = list(filter(lambda f: f.endswith(".json"), os.listdir(self.path("data"))))
 
         for i in range(min(100, len(json_files))):
-            file_path = os.path.join(self.path("to_upload"), json_files[i])
+            file_path = os.path.join(self.path("data"), json_files[i])
 
             # Read and parse JSON file
             with open(file_path) as file:
@@ -64,17 +64,17 @@ class DataManager:
         }
         measured_at = int(data["data"][self.model_name]["measured_at"])
 
-        path = self.path(f"to_upload/{measured_at}.json")
+        path = self.path(f"data/{measured_at}.json")
         with open(path, "w") as file:
             file.write(json.dumps(data))
 
         return measured_at
     
     def attach_image(self, data_id, image):
-        image_path = self.path(f"./to_upload/{data_id}.jpg")
+        image_path = self.path(f"./data/{data_id}.jpg")
         cv2.imwrite(image_path, image)
 
-        json_path = self.path(f"./to_upload/{data_id}.json")
+        json_path = self.path(f"./data/{data_id}.json")
         with open(json_path) as file:
             data = json.loads(file.read())
             data["image"] = image_path

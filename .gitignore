@@ -4,5 +4,5 @@ __pycache__/
 WS_UMB/__pycache__/
 venv/
 archive/
-to_upload/
+data/
 process.pid

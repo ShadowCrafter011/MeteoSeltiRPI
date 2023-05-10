@@ -86,7 +86,6 @@ def main(base_url, umb, name):
     # Save data to disk if it could not be uploaded
     if uploaded and response.status_code != 201:
         print(f"Server responded with {response.status_code}")
-        print(response.text)
         data_id = data_manager.save_snapshot(values)
         uploaded = False
     elif not uploaded:
@@ -122,7 +121,7 @@ def sigalrm_handler(*_):
 
 if __name__ == "__main__":
     with WS_UMB() as umb:
-        url = "http://192.168.1.100:3000"
+        url = "https://api.meteoselti.ch"
 
         if len(sys.argv) > 1:
             url = sys.argv[1]
