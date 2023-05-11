@@ -30,24 +30,24 @@ def main(base_url, umb, name):
     json_headers["Content-Type"] = "application/json"
 
     channels = {
-        "air_temperature": 100,                     # float
-        "dewpoint_temperature": 105,                # float
+        "air_temperature": 160,                     # float
+        "dewpoint_temperature": 170,                # float
         "wet_bulb_temperature": 114,                # float
         "wind_chill_temperature": 111,              # float
-        "relative_humidity": 200,                   # float
-        "absolute_humidity": 205,                   # float
-        "humidity_mixing_ratio": 210,               # float
-        "relative_air_pressure": 305,               # float
-        "absolute_air_pressure": 300,               # float
+        "relative_humidity": 260,                   # float
+        "absolute_humidity": 265,                   # float
+        "humidity_mixing_ratio": 270,               # float
+        "relative_air_pressure": 365,               # float
+        "absolute_air_pressure": 360,               # float
         "air_density": 310,                         # float
         "specific_enthalpy": 215,                   # float
-        "wind_speed": 460,                          # float
+        "wind_speed": 480,                          # float
         "max_wind_speed": 440,                      # float
         "wind_direction": 580,                      # float
         "max_wind_direction": 540,                  # float
         "wind_direction_corrected": 502,            # float
         "wind_direction_standard_deviation": 503,   # float
-        "wind_value_quality": 806,                  # float
+        "wind_value_quality": 805,                  # float
         "compass_heading": 510,                     # float
         "precipitation": 625,                       # float
         "precipitation_intensity": 820,             # float
