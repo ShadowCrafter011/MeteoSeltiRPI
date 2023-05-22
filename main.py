@@ -107,7 +107,7 @@ def main(base_url, umb, name):
         cv2.imwrite(temp_file, image)
 
         # Make cloud level prediction
-        cloud_status = CloudyAI.predict(temp_file)
+        cloud_status, certainty = CloudyAI.predict(temp_file)
 
         with open(temp_file, "rb") as image:
             files = {"sky_capture": image}
@@ -116,7 +116,8 @@ def main(base_url, umb, name):
                 headers=headers,
                 data={
                     "id": measurement_id,
-                    "cloud_status": cloud_status
+                    "cloud_status": cloud_status,
+                    "cloud_status_certainty": certainty
                 },
                 files=files
             )
