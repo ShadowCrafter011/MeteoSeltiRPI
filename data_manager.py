@@ -25,6 +25,10 @@ class DataManager:
         return json.loads(res.text)["success"] == True
 
     def upload(self):
+        # Terminate early if there are no files to upload
+        if len(os.listdir("data")) == 0:
+            return
+
         # Terminate early if server is not reachable
         if not self.ping():
             return
