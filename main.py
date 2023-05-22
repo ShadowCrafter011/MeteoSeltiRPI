@@ -7,11 +7,13 @@ from dotenv import load_dotenv
 from alert import alert
 from time import time
 import requests
+import CloudyAI
 import signal
 import json
 import cv2
 import sys
 import os
+
 
 def main(base_url, umb, name):
     signal.signal(signal.SIGALRM, sigalrm_handler)
@@ -100,13 +102,24 @@ def main(base_url, umb, name):
         return
 
     if uploaded:
-        id = json.loads(response.text)["id"]
+        measurement_id = json.loads(response.text)["id"]
         temp_file = f"{int(time())}.jpg"
         cv2.imwrite(temp_file, image)
 
+        # Make cloud level prediction
+        cloud_status = CloudyAI.predict(temp_file)
+
         with open(temp_file, "rb") as image:
             files = {"sky_capture": image}
-            requests.post(f"{base_url}/api/upload/image", headers=headers, data={"id": id}, files=files)
+            requests.post(
+                f"{base_url}/api/upload/image",
+                headers=headers,
+                data={
+                    "id": measurement_id,
+                    "cloud_status": cloud_status
+                },
+                files=files
+            )
 
         os.remove(temp_file)
     else:
@@ -116,8 +129,12 @@ def main(base_url, umb, name):
     data_manager.upload_process.join()
 
 def sigalrm_handler(*_):
-    alert("MeteoSelti script terminated", "The MeteoSelti script was terminated after execution too more than 295 seconds")
+    alert(
+        "MeteoSelti script terminated",
+        "The MeteoSelti script was terminated after execution too more than 295 seconds"
+    )
     raise Exception("Script took too long")
+
 
 if __name__ == "__main__":
     with WS_UMB() as umb:
