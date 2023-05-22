@@ -116,8 +116,8 @@ def main(base_url, umb, name):
                 headers=headers,
                 data={
                     "id": measurement_id,
-                    "cloud_status": cloud_status,
-                    "cloud_status_certainty": certainty
+                    "measurement[cloud_status]": cloud_status,
+                    "measurement[cloud_status_certainty]": certainty
                 },
                 files=files
             )
