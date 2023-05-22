@@ -15,4 +15,4 @@ def predict(image_path):
 
     class_names = ["between", "cloudy", "sunny"]
 
-    return class_names[np.argmax(score)]
+    return class_names[np.argmax(score)], 100 * np.max(score)
