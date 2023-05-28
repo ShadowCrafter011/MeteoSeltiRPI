@@ -26,7 +26,7 @@ class DataManager:
 
     def upload(self):
         # Terminate early if there are no files to upload
-        if len(os.listdir("data")) == 0:
+        if len(os.listdir(self.path("data"))) == 0:
             return
 
         # Terminate early if server is not reachable
