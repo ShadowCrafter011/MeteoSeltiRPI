@@ -3,6 +3,7 @@
 from data_manager import DataManager
 from WS_UMB.WS_UMB import UMBError
 from WS_UMB.WS_UMB import WS_UMB
+from solar import get_current_watts
 from dotenv import load_dotenv
 from alert import alert
 from time import time
@@ -20,6 +21,8 @@ def main(base_url, umb, name):
     signal.alarm(295) # Terminate if script takes longer than 4 minutes and 55 seconds to complete
 
     load_dotenv()
+
+    # print(get_current_watts())
 
     # Instantiate the data manager to start uploading missing data
     data_manager = DataManager(name, base_url)
@@ -74,6 +77,15 @@ def main(base_url, umb, name):
             continue
 
         values[name][identifier] = value
+
+    try:
+        solar = get_current_watts()
+        for _, (grid, value) in enumerate(solar.items()):
+            values[name][grid] = value
+    except:
+        print("Error getting data from Solaredge API")
+        
+
 
     values[name]["measured_at"] = time()
     payload = json.dumps(values)
