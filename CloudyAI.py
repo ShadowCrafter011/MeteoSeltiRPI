@@ -3,7 +3,7 @@ import numpy as np
 
 
 def predict(image_path):
-    interpreter = tf.lite.Interpreter(model_path="/root/meteoselti/model_240.tflite")
+    interpreter = tf.lite.Interpreter(model_path="/root/meteoselti/model.tflite")
     classifier = interpreter.get_signature_runner("serving_default")
 
     img = tf.keras.utils.load_img(image_path, target_size=(240, 240))
